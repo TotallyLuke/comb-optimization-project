@@ -123,8 +123,6 @@ int main() {
     std::vector<char> Fsense(N_ROWS_F, 'E');
 
 
-    std::vector<double> Hrhs(NUM_ROWS, 1.0);
-    std::vector<char> Hsense(NUM_ROWS, 'E');
 
     CHECKED_CPX_CALL(CPXnewcols, env, prob, 2 * NUM_VARS, &objCost[0], &lb[0], &ub[0], &ctype[0], &ycolname[0]);
     CHECKED_CPX_CALL(CPXchgobjsen, env, prob,CPX_MIN);
