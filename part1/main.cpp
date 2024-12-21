@@ -44,14 +44,14 @@ int main() {
     constexpr int NUM_ROWS = 8;
     const int NUM_VARS = NUM_ROWS * NUM_ROWS - NUM_ROWS;
     const double distance_matrix[NUM_ROWS][NUM_ROWS] = {
-        { 0.00, 0.77, 1.41, 1.85, 2.00, 1.85, 1.41, 0.77 },
-        { 0.77, 0.00, 0.77, 1.41, 1.85, 2.00, 1.85, 1.41 },
-        { 1.41, 0.77, 0.00, 0.77, 1.41, 1.85, 2.00, 1.85 },
-        { 1.85, 1.41, 0.77, 0.00, 0.77, 1.41, 1.85, 2.00 },
-        { 2.00, 1.85, 1.41, 0.77, 0.00, 0.77, 1.41, 1.85 },
-        { 1.85, 2.00, 1.85, 1.41, 0.77, 0.00, 0.77, 1.41 },
-        { 1.41, 1.85, 2.00, 1.85, 1.41, 0.77, 0.00, 0.77 },
-        { 0.77, 1.41, 1.85, 2.00, 1.85, 1.41, 0.77, 0.00 }
+        {0.00, 0.77, 1.41, 1.85, 2.00, 1.85, 1.41, 0.77},
+        {0.77, 0.00, 0.77, 1.41, 1.85, 2.00, 1.85, 1.41},
+        {1.41, 0.77, 0.00, 0.77, 1.41, 1.85, 2.00, 1.85},
+        {1.85, 1.41, 0.77, 0.00, 0.77, 1.41, 1.85, 2.00},
+        {2.00, 1.85, 1.41, 0.77, 0.00, 0.77, 1.41, 1.85},
+        {1.85, 2.00, 1.85, 1.41, 0.77, 0.00, 0.77, 1.41},
+        {1.41, 1.85, 2.00, 1.85, 1.41, 0.77, 0.00, 0.77},
+        {0.77, 1.41, 1.85, 2.00, 1.85, 1.41, 0.77, 0.00}
     };
 
     char **ycolname = new char *[2 * NUM_VARS];
@@ -77,7 +77,11 @@ int main() {
     for (int i = 0; i < NUM_VARS; ++i) {
         objCost.push_back(0.0);
     }
-
+    std::vector<double> lb(2 * NUM_VARS, 0.0);
+    std::vector<double> ub(NUM_VARS, 1.0);
+    for (int k = 0; k < NUM_VARS; ++k) {
+        ub.push_back(CPX_INFBOUND);
+    }
 
     const int N_ROWS_F = NUM_ROWS - 1;
     const int N_VARS_PER_LINE_F = 2 * N_ROWS_F - 1;
@@ -108,11 +112,7 @@ int main() {
         else Frmatval[i] = -1.0;
     }
 
-    std::vector<double> lb(2 * NUM_VARS, 0.0);
-    std::vector<double> ub(NUM_VARS, 1.0);
-    for (int k = 0; k < NUM_VARS; ++k) {
-        ub.push_back(CPX_INFBOUND);
-    }
+
     char **Frowname = new char *[NUM_ROWS - 1];
     for (int k = 0; k < NUM_ROWS - 1; ++k) {
         Frowname[k] = new char[32];
@@ -159,9 +159,13 @@ int main() {
     }
 
 
-    CHECKED_CPX_CALL(CPXaddrows, env, prob, 0, NUM_ROWS, NUM_VARS, &Grhs[0], &Gsense[0], &Grmatbeg[0], &Grmatind[0], Grmatval.data(), nullptr,
-               Growname);
+    CHECKED_CPX_CALL(CPXaddrows, env, prob, 0, NUM_ROWS, NUM_VARS, &Grhs[0], &Gsense[0], &Grmatbeg[0], &Grmatind[0],
+                     Grmatval.data(), nullptr,
+                     Growname);
+    std::vector<double> Hrhs(NUM_ROWS, 1.0);
+    std::vector<char> Hsense(NUM_ROWS, 'E');
     std::vector<int> Hrmatbeg(NUM_ROWS);
+
     for (int i = 0; i < NUM_ROWS; ++i) {
         Hrmatbeg[i] = i * (NUM_ROWS - 1);
     }
@@ -172,8 +176,9 @@ int main() {
     }
 
     std::vector<double> Hrmatval(NUM_VARS, 1.0);
-    CHECKED_CPX_CALL(CPXaddrows, env, prob, 0, NUM_ROWS, NUM_VARS, &Hrhs[0], &Hsense[0], &Hrmatbeg[0], &Hrmatind[0], Hrmatval.data(), nullptr,
-               Hrowname);
+    CHECKED_CPX_CALL(CPXaddrows, env, prob, 0, NUM_ROWS, NUM_VARS, &Hrhs[0], &Hsense[0], &Hrmatbeg[0], &Hrmatind[0],
+                     Hrmatval.data(), nullptr,
+                     Hrowname);
     std::vector<int> Lrmatbeg(NUM_VARS);
     for (int i = 0; i < NUM_VARS; ++i) {
         Lrmatbeg[i] = i * 2;
@@ -222,13 +227,12 @@ int main() {
     //
     // file.close();
 
-// Get the solution status
+    // Get the solution status
     if (CPXgetstat(env, prob) == CPXMIP_OPTIMAL) {
         std::cout << "An optimal integer solution has been found." << std::endl;
 
         CHECKED_CPX_CALL(CPXgetobjval, env, prob, &objval);
         std::cout << "After network optimization, objective is " << std::fixed << objval << std::endl;
-
 
 
         std::vector<double> yval(NUM_VARS);
@@ -264,7 +268,7 @@ int main() {
     delete [] Growname;
     delete [] Hrowname;
 
-    for (int i = 0; i < 2*NUM_VARS; ++i) {
+    for (int i = 0; i < 2 * NUM_VARS; ++i) {
         delete[] ycolname[i];
     }
     delete [] ycolname;
@@ -273,16 +277,16 @@ int main() {
     if (prob != nullptr) {
         status = CPXfreeprob(env, &prob);
         if (status) {
-            fprintf(stderr, "CPXfreeprob failed, error code %d.\n", status);
+            std::cerr <<  "CPXfreeprob failed, error code " << status << std::endl;
         }
     }
 
     if (env != nullptr) {
         status = CPXcloseCPLEX(&env);
         if (status) {
-            fprintf(stderr, "Could not close CPLEX environment.\n");
+            std::cerr << "Could not close CPLEX environment." << std::endl;
             CPXgeterrorstring(env, status, errmsg);
-            fprintf(stderr, "%s", errmsg);
+            std::cerr << errmsg;
         }
     }
 
