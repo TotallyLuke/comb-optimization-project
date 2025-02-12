@@ -1,0 +1,108 @@
+\documentclass[../main.tex]{subfiles}
+\graphicspath{{\subfix{../}}}
+\begin{document}
+
+\section{Problem Definition and Approach}
+
+In this project, we address the problem of minimizing non-productive time during the drilling process, that consists in relocating the drill bit to a new position in
+order to drill another hole.
+
+We develop two solution approaches:
+\begin{itemize}
+    \item \textbf{Exact approach:} We formulated the problem as a mixed integer-linear programming (MILP) model and solved it using IBM CPLEX to obtain optimal solutions.
+    \item \textbf{Heuristic approach:} We also designed a genetic algorithm (GA) implemented in C++. This approach aims to find an approximate solution within a smaller computational time compared to the exact approach.
+\end{itemize}
+
+\paragraph{Assumptions:}  
+We assume that the drilling sequence is predefined and all hole locations are known in advance. 
+We further assume that the drill can move at constant speed in any direction, and that all holes are of the same size and can be drilled with the same drill bit.
+The repositioning time is determined solely by the (euclidean) travel distance of the drill bit.
+
+Notice that the constant speed is an overly simplyfiyng assumption for the real-world. The acceleration and deceleration of the 
+tool are significant factors, especially when dealing with short distances 
+\cite{KHODABAKHSHI2021426}.
+
+\section{Exact method}
+\subsection{Mixed Integer-Linear Programming formulation}\label{subsec:milp-form}
+The following is the MILP formulation that has been implemented in order to solve exactly the symmetric TSP problem. It is inspired by formulation in \cite{Gavish1978TheTS}.
+
+\textbf{Sets:}
+\begin{itemize}
+\item $ N $: set of graph nodes, representing the holes.  
+\item $ A $: set of arcs $ (i, j) $ for all $ i, j \in N $, representing the trajectory covered by the drill to move from hole $ i $ to hole $ j $.
+\end{itemize}
+
+\textbf{Parameters:}
+\begin{itemize}
+    \item $ c_{ij} $: time taken by the drill to move from $ i $ to $ j $, for all $ (i, j) \in A $;
+    \item $ 0 $: arbitrarily selected starting node, where $ 0 \in N $.
+\end{itemize}
+
+\textbf{Decision Variables:}
+\begin{itemize}
+    \item $ x_{ij} $: amount of the flow shipped from $ i $ to $ j $, for all $ (i, j) \in A $;
+    \item $ y_{ij} $: $ 1 $ if arc $ (i, j) $ ships some flow, $ 0 $ otherwise, for all $ (i, j) \in A $.
+\end{itemize}
+\textbf{Formulation:}
+\begin{align}
+    \min & \sum_{i,j : (i,j) \in A} c_{i j} y_{i j}                                                                                                 \\
+    \label{MILP:consume}
+    s.t. & \sum_{i : (i,k) \in A} x_{i k} - \sum_{j : (k,j) \in A, j \neq 0} x_{k j} &  & = 1                    &  & \forall k \in N               \\
+    \label{MILP:output}
+         & \sum_{j : (i,j) \in A} y_{i j} &  & = 1   &  & \forall i \in N               \\
+    \label{MILP:input}
+         & \sum_{i : (i,j) \in A} y_{i j}  &  & = 1 &  & \forall j \in N               \\
+    \label{MILP:activation}
+         & x_{i j} &  & \leq (|N| - 1) y_{i j} &  & \forall (i,j) \in A, j \neq 0 \\
+         & x_{i j} \in \mathbb{R} &  & &  & \forall (i,j) \in A, j \neq 0 \\
+         & y_{i j} \in \{0, 1\} &  &  &  & \forall (i,j) \in A
+\end{align}
+
+\subsection{Implementation}
+
+\paragraph{Variables and objective function}
+Let $n$ be the number of nodes. The number $e$ of undirected edges (excluding self-loops) is equivalent to $n*(n-1)$. For our problem we declared $e$ binary variables $y_0, \ldots y_{e-1}$ and $n*(n-1)$ integer variables, $x_0, \ldots x_{e-1}$. Notice that every variable represent a directed arc that is not a self-loop, and viceversa every directed arc that is not a self-loop is represented by a variable $x$ and a variable $y$. \footnote{In facts the class \texttt{Graph} defines a one-to-one mapping between integers $k \in [0,e) \cup \mathbb{N}$ and couples of integer $(i,j)$ s.t. $i,j < n \land i\neq j$}
+
+
+The objective function is a sum of $e$ variables, precisely $\sum_{i \in [0,e)\,\cup \mathbb{N}} y_{i}$, and our goal is to minimize it.
+
+\paragraph{Rows}
+We had to rewrite constraint 5 so to have a real number on the right-hand side:
+
+$$ x_{i j} -(|N| - 1) y_{i j} \; \leq 0 \qquad \forall (i,j) \in A, j \neq 0 $$
+
+Let $\textbf{u}$ be the vector $[y_0, \ldots y_{e-1},x_0, \ldots x_{e-1}]$.
+Let $F$, $G$, $H$, $L$ be matrices such that constraints 2--5 are equivalent to $F\textbf{u}=1$, $G\textbf{u}=1$, $H\textbf{u}=1$, $L\textbf{u} \leq 0$
+
+For every $\eta \in \{F,G,H, L\}$ we have defined the arrays  $\eta$\texttt{sense}, $\eta$\texttt{rmatbeg}, $\eta$\texttt{rmatind}, $\eta$\texttt{rmatval}, $\eta$\texttt{rowname} and the integers $\eta$\texttt{rcnt} and $\eta$\texttt{nzcnt} to be passed to \texttt{CPXaddrows}.
+In this way, only four (checked) calls to \texttt{CPXaddrows} are performed to solve the mixed integer-linear problem.
+\paragraph{Classes}
+
+
+The program is contained almost entirely within the \texttt{main()} function. This style follows that of CPLEX library examples, which are typically written inside the \texttt{main()} procedure, and has been implemented because of the limited size of the codebase in term of single lines of code (\textit{s.l.o.c.}) and the absence of need to separate logic into multiple classes.
+
+
+Five additional classes are used:
+\begin{itemize}
+\item    \texttt{TSPGraphReader}, responsible for reading and parsing a graph from file. 
+\item    \texttt{Graph}, which stores a the adjeciency matrix of a graph and provides static method to convert from single coordinate to double coordinate.
+\item	 \texttt{Node}, that represents a two-dimensional point, to be used as a vertex of a \texttt{Graph}. Provides a method that returns the distance from another \texttt{Node}.
+\item \texttt{Path}, that represents an acyclic path in the graph.
+\item    \texttt{CommandLineOptions}, which handles command-line arguments such as the input filename.
+\end{itemize}
+
+The header \texttt{cpxmacro.h}, that defines the macros \texttt{DECL\_ENV}, \texttt{DECL\_PROB}, and \texttt{CHECKED\_CPX\_CALL}, the array of character \texttt{errmsg} and the integer \texttt{status} has been included in our project.
+
+We have used  Valgrind Static Analyzer to check for memory leaks.
+
+
+\subsection{Handling the MIP Optimality Gap in CPLEX}
+
+
+In our experiments, for many problem instances, regardless of the computation time allocated to the solver, the termination status returned by CPLEX is \texttt{CPXMIP\_OPTIMAL\_TOL}, which indicates that an optimal solution has been found within the tolerance defined by either the relative or absolute MIP gap. 
+
+In solving mixed-integer programming (MIP) problems using CPLEX, one common approach to achieving near-exact optimality is to explicitly tighten the optimality gap by setting the parameter \texttt{CPXPARAM\_MIP\_Tolerances\_MIPGap} to a sufficiently small value (e.g., $10^{-6}$). 
+
+However, in our experiments, setting \texttt{CPXPARAM\_MIP\_Tolerances\_MIPGap} to very small values resulted in memory corruption errors, such as \texttt{double free or corruption (!prev)}. Given such failures, manually tightening the MIP optimality gap was deemed infeasible. Hence the default value for \texttt{CPXPARAM\_MIP\_Tolerances\_MIPGap} (i.e. $10^{-3}$) has been  left unchanged.
+
+\end{document}

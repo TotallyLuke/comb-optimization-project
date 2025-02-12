@@ -1,0 +1,268 @@
+\documentclass[../main.tex]{subfiles}
+\usepackage{tcolorbox}
+
+
+\graphicspath{{\subfix{../}}}
+\begin{document}
+
+
+\section{Genetic algorithm}
+\subsection{Outline}
+For the second assignment, a \textbf{genetic algorithm} has been designed to solve the Traveling Salesperson Problem (TSP).
+
+A \textit{graph} is represented using an adjacency matrix, and an hamiltonian \textit{tour} is expressed as a vector of non-repeating integer numbers, each corresponding to a node. The length of the vector corresponding to a tour matches the number of nodes in the graph. It is worthy to note that any hamiltonian tour can be expressed in many ways as a vectors of node, since a cycle has no starting node.
+
+The hamiltonian tour is considered as the individual in our problem, and the fitness function is the inverse total weight of the edges traversed in the tour. Each individual is a valid possible solution for our problem. Although we are aware that is not a compulsory characteristic, this feature avoids us the process of "fixing" an unfeasible solution.
+
+Various selection, crossover, and mutation operators have been implemented within a common algorithmic framework, including:
+
+\begin{itemize}
+    \item Tournament selection
+    \item Ranking selection
+    \item Order crossover (OX)
+    \item Partially mapped crossover (PMX)
+    \item Reverse Sequence Mutation (PSM)
+    \item Partial Shuffle Mutation (RSM)
+\end{itemize}
+
+
+\subsection{Initial population generation}
+The initial population consists of randomly generated permutation of nodes, each having as many node as the graph of the problem.
+
+Few individuals (5\%) are generated using one of the following heuristics.
+
+\subsubsection{Nearest neighbor heuristics}
+
+Begin at a random node  and build a tour by always moving to the nearest neighbor (among the nodes not yet connected to  
+the tour) of the latest node to join the tour. When all nodes have been connected  to the tour, join the last node to the origin to complete the tour.\cite{mitlogisticaltransportation}
+
+
+Worst-case performance: $\frac{1}{2} \lceil \log_2 n \rceil + \frac{1}{2}$
+
+Complexity: $O(n^2)$.
+
+\subsubsection{Farthest insertion}
+The tour construction process begins with an initial loop consisting of only two nodes. At each iteration, a new node is inserted into the tour.  
+
+The insertion cost is defined as:  
+\begin{equation}
+    c(i, k, j) = d(i, k) + d(k, j) - d(i, j),
+\end{equation}
+where $i$ and $j$ are consecutive nodes in the current tour $T$, and $d(a, b)$ represents the distance between nodes $a$ and $b$.  
+
+The next node to be added to the tour is the one that maximizes $d(k, T)$, i.e., the node farthest from the existing tour. Once selected, the node is inserted at the position $(i, j)$ that minimizes the insertion cost $c(i, k, j)$. This process is repeated iteratively until all nodes have been incorporated into the tour $T$.
+
+Worst-case performance: unknown \cite{mitlogisticaltransportation}
+
+Complexity: $O(n^2)$.
+\subsection{Crossover operators}
+
+Both the following crossover have been implemented.
+\subsubsection{Partially Mapped Crossover (PMX)}
+
+Partially Mapped Crossover (PMX) is a recombination operator used in permutation-based genetic algorithms, particularly for problems such as the Traveling Salesman Problem (TSP). It ensures that offspring maintain valid permutations while inheriting information from both parents.
+
+Let $P_0$ and $P_1$ be the first and second parent chromosomes.
+The algorithm is the following \cite{crossover-wikipedia}
+\begin{enumerate}
+    \item Randomly select two crossover points in $P_0$.
+    \item Copy the segment between these two points from $P_0$ to the child chromosome at the same position.
+    \item Identify genes that have not been copied by checking the corresponding segment in $P_1$, starting from the first crossover point.
+    \item For each missing gene (denoted as $m$):
+    \begin{itemize}
+        \item Find the gene $n$ in the offspring that was copied from $P_0$ in its place.
+        \item Copy $m$ to the position held by $n$ in $P_1$ if that position is unoccupied.
+        \item Otherwise, move to the next missing gene and repeat the process.
+    \end{itemize}
+\end{enumerate}
+
+This method preserves positional information and maintains valid permutations.
+
+\subsubsection{Order Crossover (OX)}
+
+Order Crossover (OX) is a recombination operator used in permutation-based genetic algorithms. It ensures that the offspring inherit the relative order of elements from both parents.
+
+
+Let $P_0$ and $P_1$ be the first and second parent chromosomes.
+The algorithm is the following \cite{crossover-wikipedia}:
+\begin{enumerate}
+    \item Randomly select two crossover points in $P_0$.
+    \item Copy the segment between these points from $P_0$ to the child chromosome at the same position.
+    \item Traverse $P_1$ from the second crossover point onward (wrapping around if necessary) and copy the remaining genes in the same order as they appear in $P_1$, skipping any genes already present in the child.
+\end{enumerate}
+
+This method preserves the relative order of genes while maintaining valid permutations in the offspring.
+
+
+\subsection{Genetic operators}
+
+Both the following crossover have been implemented.
+%From now on, the
+\subsubsection{Reverse Sequence Mutation (RSM)}
+
+The Reverse Sequence Mutation
+\cite{DBLP:journals/corr/abs-1203-3099}
+reverses a sequence limited by two position $i$ and $j$ such that $0 \leq i < j \leq n-1$, where $n$ is the chromosome length (in our case the number of holes). 
+
+\subsubsection{Partial Shuffle Mutation (PSM)}
+The Partial Shuffle Mutation \cite{DBLP:journals/corr/abs-1203-3099}
+swap one or more couple of elements in the chromosome. In our implementation a PSM mutation 
+swaps only a couple of element.
+
+\subsection{Selection operators}
+We have implemented two selection operators: the linear ranking selection operator and the $k$-tournament selection operator.
+
+The linear ranking selection operator assigns a rank to each individual in the population based on their fitness values, with higher-ranked individuals having a greater probability of being selected for reproduction. The $k$-tournament selection operator involves randomly selecting a subset of individuals from the population and choosing the best among them as a parent.
+
+\subsection{Survival selection}
+
+We choosed the $(\mu, \gamma)$ evolution strategy. In each iteration, $\lambda$ offspring are generated, from which the $\mu < \lambda$ best individuals are selected to form the next generation. Following \cite{oslobioinspired}, we set the offspring size as $\lambda = 3\mu$, which provides a good balance between exploration and selection pressure.
+
+
+
+The offspring selection is based on the fitness rankings, not on the actual fitness values. The resulting algorithm is therefore invariant with respect to monotonic transformations of the objective function. 
+
+An alternative evolution strategy is ($\mu$ + $\gamma$), in which the best are selected from a union of $\mu$ parents and $\lambda$ offspring. The strategy is considered worse than ($\mu$, $\gamma$) in leaving local optima \cite{oslobioinspired}.
+\subsection{Elitism}
+We let the user specify an elitism rate in [0,1], which preserves the best solutions across generations to prevent losing high-quality candidates. Specifically, given the $elitism\_rate$ we retain $elitism\_counter$ (computed as $\mu$ * $elitism\_rate$) best parents and select the best ($\mu$ - $elitism\_counter$) offspring to form the next generation's population of size $\mu$.
+\section{Implementation}
+\subsection{Class Design}
+
+The following classes have been defined. Each class has been designed with minimal responsibilities, adhering to the principle of single responsibility: This explain the relatively large number of classes in the project.
+
+Description of trivial methods such as constructors and conversion operators are omitted.
+
+\begin{itemize}
+\item The \texttt{Node} class represent a two-dimensional point, to be used as a vertex of a \texttt{Graph}. Contains a method \texttt{double distance(const Node\&) const}, that returns the distance from another \texttt{Node}.
+
+\item The \texttt{Graph} class represent a complete weighted graph. A \texttt{Graph} is constructed from an array of \texttt{Node}, representing its vertices. The weights of the graph's edges are stored in a (private) two-dimensional vector of \texttt{double} values.
+
+\item
+The \texttt{Tour} class represents a single candidate solution and is responsible for storing and manipulating a chromosome. 
+
+It contains a vector for the sequence of node of a hamiltonian tour, and a double representing the tour's cost. Two methods are provided to reverse a sub-path (\texttt{reverse\_sub\_path(int from, int to)}) and to swap two indices (\texttt{swap\_indexes(int i, int j)}). The tour's cost is updated to reflect the current state of the tour after construction and any operations.
+
+
+
+\item the \texttt{FitnessEvaluator} class calculates the cost of a \texttt{Tour} based on the total weight of the edges traversed in the order specified by the \texttt{Tour} object. 
+At \texttt{FitnessEvaluator} is constructed  after a \texttt{Graph} object, which contains the adjeciency matrix that is necessary information to compute the cost value.
+    
+\item 
+The \texttt{Solver} class  represents the core of the genetic algorithm process. The method \texttt{solve} define the main loop (where the evolution take place) and its termination condition. The loop makes polimorphic calls to methods of \texttt{\_mutation\_operator}, \texttt{\_crossover\_operator}, and \texttt{\_selection\_operator}, i.e. utilizes different genetic operator depending on which object the user passed to the constructor.
+
+An object of class \texttt{Solver} needs the caller to set a \textbf{FitnessEvaluator}, and all the genetic operators (for Mutation, Crossover, and Selection) in order for the \texttt{solve} method to be used on an population (vector) of \textbf{Tour}
+
+\end{itemize}
+
+\subsubsection{Genetic operators}
+Three \emph{abstract} classes are defined as being the base for genetic operators:
+
+\begin{itemize}
+\item
+\texttt{MutationOperator}, having a public virtual method \texttt{mutate}, that is implemented by the two concrete subclasses, \texttt{PSMutation} and \texttt{RSMutation}.
+\item 
+\texttt{CrossoverOperator} having a public virtual method \texttt{crossover}, that is implemented by the two concrete subclasses, \texttt{OrderCrossover} and \texttt{PMXCrossover}.
+\item
+\texttt{SelectionOperator} having a public virtual method \texttt{select}, that is implemented by the two concrete subclasses, \texttt{TournamentSelection} and \texttt{RankingSelection}.
+\end{itemize}
+\paragraph*{Extensibility}
+A user can define their own genetic operators by subclassing a proper class and subsequently instantiate a \texttt{Solver} that uses the newly defined operators.
+
+\paragraph*{Similarity with strategy pattern}
+The design of class \texttt{Solver} and genetic operators classes is loosely inspired by  
+the well-known strategy pattern. In our implementation, the caller can specify the strategy by providing an instance of a specific subclass to \texttt{Solver}'s constructor. However, this strategy is immutable at runtime, meaning it cannot be altered once the object has been instantiated.
+
+%The inspiration for strategy pattern comes from 
+\subsubsection{Helper classes}
+\begin{itemize}
+\item \texttt{TSPGraphReader} provides a method \texttt{read(const std::string \&filepath)} that returns a vector of \texttt{Node} corresponding to point indicated by a valid file in TSPLIB-format.
+The TSPLIB-format is the following:
+\begin{verbatim}
+%..some headers..
+NODE_COORD_SECTION
+1   x1   y1
+2   x2   y2
+%..some other points
+EOF
+\end{verbatim}
+\item \texttt{CommandLineOptions} is responsible for parsing and handling command-line arguments.
+\end{itemize}
+
+
+\begin{tcolorbox}[title=Note - Iterators and access operators]
+Most of our data structures provide \texttt{begin()}, \texttt{end()}, and \texttt{operator[]}. These methods:	
+\begin{itemize}
+\item
+ ensure compatibility with STL algorithms that operates on iterator pairs (such as \texttt{std::find}, \texttt{std::sort}, and \texttt{std::accumulate});
+ \item allow usage in constructs like:
+  \vspace{-10pt}  
+\begin{verbatim}
+  for (auto it = container.begin(); it != container.end(); ++it) { ... }
+\end{verbatim}
+  \vspace{-10pt}
+and:
+  \vspace{-10pt}
+\begin{verbatim}
+  for (auto elem : container) { ... }
+\end{verbatim}
+  \vspace{-10pt}
+\end{itemize}
+Furthermore, \texttt{cbegin()} and \texttt{cend()} return constant iterators, and are used to explicitly indicate that the referenced elements remain unmodified.
+\end{tcolorbox}
+
+
+\subsection{Usage}
+Available options can be displayed by running \texttt{assignment2 -h}. The ouptut is the following:
+\begin{verbatim}
+assignment2 [options]
+options:
+  -f, --filename [FILE]                  	  Name of the input TSP instance file
+  
+  -t, --timeout-ms [TIMEOUT]                Timeout expressed in milliseconds
+
+  -m, --mutation-probability [PROBABILITY]  Probability that a mutation occurs 
+                                             in the genetic algorithm
+
+  -c, --crossover-rate [RATE]           Probability that two selected solutions 
+                                         are mated to create a new offspring
+
+  -e, --elitism-rate [RATE]             Elitism rate
+
+  --mu [SIZE]                           Size of the population pool
+
+  --lambda [SIZE]                       Size of the offspring pool before being pruned
+
+  -k, --tournament-size [SIZE]          Size of the tournament selection
+
+  -N, --max-gen-no-improvement [NUMBER] Maximum number of generations 
+                                         without solution improvement
+
+  -M, --max-gen [NUMBER]                Maximum number of generations
+  
+  -b, --best [BOOL]                  If true, runs the algorithm once with the best 	
+                                         combination of genetic operators; if false, 
+                                         runs it 8 times with different combinations
+\end{verbatim}
+
+
+Any run of \texttt{assignment1 -f FILENAME} generates: 
+\begin{itemize}
+\item a file having extension \texttt{.lp} which contains the description of the model as obtained by \texttt{CPXwriteprob};
+
+\item the solution to the problem (as an ordered sequence of integers representing the nodes), the optimal cost (as an euclidean distance) and the eventual MIP gap; in \texttt{stdout}.
+\end{itemize}
+
+Any run of \texttt{assignment1 -f FILENAME} generates, for each of the 8 combinations
+of genetic operator implemented, the approximate solution to the problem (as an ordered sequence of integers representing the nodes) and its cost (as an euclidean distance), in \texttt{stdout}.
+
+\section{Further improvements}
+
+To refine the solutions produced by genetic algorithm, we propose the incorporation of local optimization techniques on the permutation generated by our algorithm; for example the 2-opt algorithm or Tabu Search.
+
+The 2-opt algorithm systematically improves the solution by iteratively removing two crossing segments and reconnecting the resulting paths, thereby reducing the overall tour length through incremental improvements: In facts 2-opt is guaranteed to never output a solution worse that the previous one.
+
+Alternatively, Tabu Search can be used to explore the solution space more broadly. By maintaining a tabu list of recently visited solutions, Tabu Search allows for the acceptance of non-improving moves, which helps to escape local optima and encourages a more diverse search.
+
+A different fitness function that penalizes solution similar to the current best one might be tried.
+
+\end{document}

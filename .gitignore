@@ -30,7 +30,7 @@
 *.exe
 *.out
 *.app
-
+cmake-build-debug/
 CMakeLists.txt.user
 CMakeCache.txt
 CMakeFiles
