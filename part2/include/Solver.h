@@ -93,6 +93,7 @@ class MutationOperator {
 public:
     virtual void mutate(Tour& tour) const = 0;
     virtual std::string describe() const = 0;
+    virtual ~MutationOperator() = default;
 
     explicit MutationOperator(const double mut_rate=0.01): _mutation_rate(mut_rate){}
 

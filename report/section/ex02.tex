@@ -106,7 +106,7 @@ reverses a sequence limited by two position $i$ and $j$ such that $0 \leq i < j 
 
 \subsubsection{Partial Shuffle Mutation (PSM)}
 The Partial Shuffle Mutation \cite{DBLP:journals/corr/abs-1203-3099}
-swap one or more couple of elements in the chromosome. In our implementation a PSM mutation 
+swaps one or more couple of elements in the chromosome. In our implementation a PSM mutation 
 swaps only a couple of element.
 
 \subsection{Selection operators}
@@ -125,6 +125,8 @@ The offspring selection is based on the fitness rankings, not on the actual fitn
 An alternative evolution strategy is ($\mu$ + $\gamma$), in which the best are selected from a union of $\mu$ parents and $\lambda$ offspring. The strategy is considered worse than ($\mu$, $\gamma$) in leaving local optima \cite{oslobioinspired}.
 \subsection{Elitism}
 We let the user specify an elitism rate in [0,1], which preserves the best solutions across generations to prevent losing high-quality candidates. Specifically, given the $elitism\_rate$ we retain $elitism\_counter$ (computed as $\mu$ * $elitism\_rate$) best parents and select the best ($\mu$ - $elitism\_counter$) offspring to form the next generation's population of size $\mu$.
+\subsection{Termination condition}  
+The genetic algorithm terminates if the maximum number of generations without improvements of the best individual in the population. By default, this limit is set to 100 generations, after which the best individual found so far is returned.
 \section{Implementation}
 \subsection{Class Design}
 
@@ -150,7 +152,7 @@ At \texttt{FitnessEvaluator} is constructed  after a \texttt{Graph} object, whic
 \item 
 The \texttt{Solver} class  represents the core of the genetic algorithm process. The method \texttt{solve} define the main loop (where the evolution take place) and its termination condition. The loop makes polimorphic calls to methods of \texttt{\_mutation\_operator}, \texttt{\_crossover\_operator}, and \texttt{\_selection\_operator}, i.e. utilizes different genetic operator depending on which object the user passed to the constructor.
 
-An object of class \texttt{Solver} needs the caller to set a \textbf{FitnessEvaluator}, and all the genetic operators (for Mutation, Crossover, and Selection) in order for the \texttt{solve} method to be used on an population (vector) of \textbf{Tour}
+An object of class \texttt{Solver} needs the caller to set a \texttt{FitnessEvaluator}, and all the genetic operators (for Mutation, Crossover, and Selection) in order for the \texttt{solve} method to be used on an population (vector) of \texttt{Tour}.
 
 \end{itemize}
 
@@ -210,9 +212,61 @@ and:
 Furthermore, \texttt{cbegin()} and \texttt{cend()} return constant iterators, and are used to explicitly indicate that the referenced elements remain unmodified.
 \end{tcolorbox}
 
+\section{Project Structure}
+The project is organized into the following directory structure:
 
-\subsection{Usage}
-Available options can be displayed by running \texttt{assignment2 -h}. The ouptut is the following:
+\begin{verbatim}
+comb-optimization-project/
+    part1/
+        Makefile
+        test_instances/
+            ...
+    part2/
+        Makefile
+        test_instances/
+            ...
+\end{verbatim}
+\subsection{Compilation and Execution}
+To compile and run the program for each part, the user must follow these steps:
+
+\begin{enumerate}
+    \item For each $ i $ in \{1, 2\}:
+    \begin{enumerate}
+        \item Navigate to the directory \texttt{part\textit{i}}:
+        \begin{verbatim}
+        cd part{i}
+        \end{verbatim}
+        \item Compile the program using the Makefile:
+        \begin{verbatim}
+        make
+        \end{verbatim}
+        \item Run the program with a specific test instance:
+        \begin{verbatim}
+        ./assignment{i} -f test_instances/FILENAME
+        \end{verbatim}
+        where \texttt{FILENAME} is the name of the test instance to run.
+    \end{enumerate}
+\end{enumerate}
+
+\subsection{Example}
+For example, to run the program in \texttt{part1} with a test instance named \texttt{random64.tsp}, the user would execute the following commands:
+
+\begin{verbatim}
+cd part1
+make
+./assignment1 -f test_instances/random64.tsp
+\end{verbatim}
+
+Similarly, for \texttt{part2}:
+
+\begin{verbatim}
+cd part2
+make
+./assignment2 -f test_instances/random64.tsp
+\end{verbatim}
+
+\subsection{Options}
+Available options can be displayed by running \texttt{./assignment1 -h}or \texttt{assignment2 -h}. The output for \texttt{./assignment2 -h} is the following:
 \begin{verbatim}
 assignment2 [options]
 options:
@@ -244,7 +298,9 @@ options:
                                          runs it 8 times with different combinations
 \end{verbatim}
 
+For \texttt{./assignment1} only the first two options (filename selection and timeout in milliseconds) are available.
 
+\subsection{Expected output}
 Any run of \texttt{assignment1 -f FILENAME} generates: 
 \begin{itemize}
 \item a file having extension \texttt{.lp} which contains the description of the model as obtained by \texttt{CPXwriteprob};
@@ -252,17 +308,8 @@ Any run of \texttt{assignment1 -f FILENAME} generates:
 \item the solution to the problem (as an ordered sequence of integers representing the nodes), the optimal cost (as an euclidean distance) and the eventual MIP gap; in \texttt{stdout}.
 \end{itemize}
 
-Any run of \texttt{assignment1 -f FILENAME} generates, for each of the 8 combinations
+Any run of \texttt{assignment2 -f FILENAME} generates, for each of the 8 combinations
 of genetic operator implemented, the approximate solution to the problem (as an ordered sequence of integers representing the nodes) and its cost (as an euclidean distance), in \texttt{stdout}.
 
-\section{Further improvements}
-
-To refine the solutions produced by genetic algorithm, we propose the incorporation of local optimization techniques on the permutation generated by our algorithm; for example the 2-opt algorithm or Tabu Search.
-
-The 2-opt algorithm systematically improves the solution by iteratively removing two crossing segments and reconnecting the resulting paths, thereby reducing the overall tour length through incremental improvements: In facts 2-opt is guaranteed to never output a solution worse that the previous one.
-
-Alternatively, Tabu Search can be used to explore the solution space more broadly. By maintaining a tabu list of recently visited solutions, Tabu Search allows for the acceptance of non-improving moves, which helps to escape local optima and encourages a more diverse search.
-
-A different fitness function that penalizes solution similar to the current best one might be tried.
 
 \end{document}

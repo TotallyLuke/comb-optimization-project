@@ -1,6 +1,6 @@
 # Compiler and flags
 CXX := g++
-CXXFLAGS := -Wall -O2 -std=c++14
+CXXFLAGS := -Wall -O2  -Wno-sign-compare -std=c++14
 LDFLAGS := 
 
 # Include directories

@@ -47,7 +47,7 @@ public:
         if (nodes.empty()) {
             throw std::runtime_error("No nodes found in the file.");
         }
-        return std::move(nodes);
+        return nodes;
     }
 
 private:

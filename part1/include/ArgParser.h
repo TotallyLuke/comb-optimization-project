@@ -8,7 +8,7 @@
 struct CommandLineOptions {
     std::string filename;
     int timeout_ms;
-    std::string getFilenameExtension() {
+    std::string getFilenameExtension() const {
         size_t last_slash = filename.find_last_of("/\\");
         size_t last_dot = filename.find_last_of(".");
 
@@ -53,7 +53,16 @@ CommandLineOptions parse_arguments(int argc, char* argv[]) {
                       << "  -f, --filename [FILE]                Name of the input TSP instance file\n"
                       << "  -t, --timeout-ms [TIMEOUT]           Timeout expressed in milliseconds\n";
             exit(0);
+        } else {
+            std::cerr << "Error: Unknown option " << arg << std::endl;
+            exit(1);
         }
+    }
+
+    // ensure filename is provided
+    if (options.filename.empty()) {
+        std::cerr << "Error: A filename must be specified using -f or --filename\n";
+        exit(1);
     }
 
     return options;

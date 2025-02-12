@@ -9,7 +9,7 @@ CommandLineOptions parse_arguments(int argc, char* argv[]) {
     options.crossover_rate = 0.7;
     options.elitism_rate = 0.0;
     options.mu = 100;
-    options.lambda = 250;
+    options.lambda = 300;
     options.k = 8;
     options.max_gen_no_improvement = 100;
     options.max_gen = 400;
@@ -122,6 +122,9 @@ CommandLineOptions parse_arguments(int argc, char* argv[]) {
             exit(0);
         }
     }
-
+    if (options.filename.empty()) {
+        std::cerr << "Error: A filename must be specified using -f or --filename\n";
+        exit(1);
+    }
     return options;
 }

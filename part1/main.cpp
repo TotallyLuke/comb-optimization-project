@@ -55,7 +55,7 @@ void checkSolutionGap(CPXENVptr env, CPXLPptr lp) {
     mip_gap = (objval != 0.0) ? (std::fabs(best_bound - objval) / std::fabs(objval)) * 100.0 : 0.0;
 
 
-    std::cout << "Best Found Solution: " << objval << std::endl;
+    std::cout << "\nBest Found Solution: " << objval << std::endl;
     std::cout << "Best Known Bound: " << best_bound << std::endl;
     std::cout << "MIP Gap: " << mip_gap << "%" << std::endl;
 }
@@ -261,12 +261,6 @@ int main(int argc, char *argv[]) {
         } else if (CPXgetstat(env, prob) == CPXMIP_OPTIMAL_TOL) {
             std::cout << "A quasi optimal  solution has been found." << std::endl;
         }
-        // if (CPXgetstat(env, prob) == CPXMIP_OPTIMAL) {
-        //     const int cur_numrows = CPXgetnumrows(env, prob);
-        //     std::vector<double> slack;
-        //     slack.reserve(num_vars);
-        //     CHECKED_CPX_CALL(CPXgetslack, env, prob, &slack[0], 0, cur_numrows - 1);
-        // }
 
         if (CPXgetstat(env, prob) == CPXMIP_OPTIMAL || CPXgetstat(env, prob) == CPXMIP_OPTIMAL_TOL) {
             CHECKED_CPX_CALL(CPXgetobjval, env, prob, &objval);

@@ -32,7 +32,7 @@ std::vector<Tour> get_population(const Graph *g, const int population_size) {
         }
         std::shuffle(population.begin(), population.end(), eng);
     }
-    return std::move(population);
+    return population;
 }
 
 void invoke_solvers(const Graph *g, const double mutation_rate, const int POP_SIZE, const int lambda,
